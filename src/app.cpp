@@ -68,7 +68,6 @@ bool Application::initialize(HINSTANCE hInstance) {
 
     // Load configuration
     config_manager_.load();
-    const auto& conf = config_manager_.get();
 
     // Wire command registry callbacks
     command_registry_.set_exit_callback([this]() {

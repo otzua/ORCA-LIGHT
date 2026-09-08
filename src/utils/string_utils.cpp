@@ -55,6 +55,28 @@ wchar_t to_lower_char(wchar_t c) {
     return static_cast<wchar_t>(towlower(c));
 }
 
+std::wstring to_upper(std::wstring_view str) {
+    std::wstring result;
+    result.reserve(str.size());
+    for (wchar_t c : str) {
+        result.push_back(static_cast<wchar_t>(towupper(c)));
+    }
+    return result;
+}
+
+std::string to_upper(std::string_view str) {
+    std::string result;
+    result.reserve(str.size());
+    for (char c : str) {
+        result.push_back(static_cast<char>(toupper(static_cast<unsigned char>(c))));
+    }
+    return result;
+}
+
+wchar_t to_upper_char(wchar_t c) {
+    return static_cast<wchar_t>(towupper(c));
+}
+
 std::wstring trim(std::wstring_view str) {
     size_t first = 0;
     while (first < str.size() && iswspace(str[first])) {

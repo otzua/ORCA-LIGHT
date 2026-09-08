@@ -119,6 +119,7 @@ ID2D1Bitmap* IconLoader::get_icon_for_path(ID2D1RenderTarget* render_target, con
 }
 
 ID2D1Bitmap* IconLoader::get_type_icon(ID2D1RenderTarget* render_target, const std::wstring& type_name) {
+    (void)render_target;
     auto it = cache_.find(type_name);
     if (it != cache_.end()) {
         return it->second;

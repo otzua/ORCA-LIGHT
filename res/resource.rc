@@ -2,4 +2,4 @@
 #include <windows.h>
 
 // Application Manifest
-IDR_MANIFEST 24 "Spotlight_light.manifest"
+IDR_MANIFEST 24 "orca_light.manifest"

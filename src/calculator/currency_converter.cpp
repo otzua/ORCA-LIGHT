@@ -119,10 +119,8 @@ std::optional<CurrencyResult> CurrencyConverter::convert(std::wstring_view query
             return std::nullopt; // No source currency
         }
         
-        for (auto& c : from) c = std::towupper(c);
-        
-        std::wstring to = match[4].str();
-        for (auto& c : to) c = std::towupper(c);
+        from = orca_light::utils::to_upper(from);
+        std::wstring to = orca_light::utils::to_upper(match[4].str());
 
         std::lock_guard<std::mutex> lock(s_rates_mutex);
         if (s_rates.count(from) && s_rates.count(to)) {

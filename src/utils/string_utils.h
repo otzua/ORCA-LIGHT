@@ -14,7 +14,10 @@ std::string wide_to_utf8(std::wstring_view wide_str);
 // Case operations
 std::wstring to_lower(std::wstring_view str);
 std::string to_lower(std::string_view str);
+std::wstring to_upper(std::wstring_view str);
+std::string to_upper(std::string_view str);
 wchar_t to_lower_char(wchar_t c);
+wchar_t to_upper_char(wchar_t c);
 
 // Whitespace and trimming
 std::wstring trim(std::wstring_view str);

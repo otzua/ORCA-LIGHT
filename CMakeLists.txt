@@ -63,6 +63,7 @@ target_compile_definitions(Orca-Light PRIVATE
     _UNICODE
     WIN32_LEAN_AND_MEAN
     NOMINMAX
+    _CRT_SECURE_NO_WARNINGS
 )
 
 if(MSVC)

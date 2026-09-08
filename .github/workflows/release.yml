@@ -29,7 +29,7 @@ jobs:
       - name: Compile Windows resource
         shell: msys2 {0}
         run: |
-          windres -i res/resource.rc -o res/resource.o --target=pe-x86-64
+          windres -Ires -i res/resource.rc -o res/resource.o --target=pe-x86-64
 
       - name: Build optimized static executable
         shell: msys2 {0}
