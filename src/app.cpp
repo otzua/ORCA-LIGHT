@@ -115,11 +115,14 @@ bool Application::initialize(HINSTANCE hInstance) {
     // Fast startup: load existing index cache from disk first
     PWSTR appdata = nullptr;
     std::wstring cache_path = L"file_index.cache";
+    std::wstring mru_path = L"mru.cache";
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdata))) {
         cache_path = std::wstring(appdata) + L"\\Orca-Light\\file_index.cache";
+        mru_path = std::wstring(appdata) + L"\\Orca-Light\\mru.cache";
         CoTaskMemFree(appdata);
     }
     file_indexer_.load_cache(cache_path);
+    search_engine_->load_mru(mru_path);
 
     // Scan applications and start background file indexing
     CreateThread(nullptr, 0, [](LPVOID lpParam) -> DWORD {
@@ -235,7 +238,11 @@ void Application::shutdown() {
     PWSTR appdata = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdata))) {
         std::wstring cache_path = std::wstring(appdata) + L"\\Orca-Light\\file_index.cache";
+        std::wstring mru_path = std::wstring(appdata) + L"\\Orca-Light\\mru.cache";
         file_indexer_.save_cache(cache_path);
+        if (search_engine_) {
+            search_engine_->save_mru(mru_path);
+        }
         CoTaskMemFree(appdata);
     }
 

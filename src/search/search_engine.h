@@ -56,6 +56,10 @@ public:
         return file_indexer_.is_indexing();
     }
 
+    // Persist launch history
+    bool save_mru(const std::wstring& cache_file_path);
+    bool load_mru(const std::wstring& cache_file_path);
+
 private:
     void search_calculator(std::wstring_view query_text, std::vector<SearchResult>& out_results);
     void search_commands(std::wstring_view query_text, std::vector<SearchResult>& out_results, bool force_commands_only);

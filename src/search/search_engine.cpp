@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 
 namespace orca_light::search {
 
@@ -141,7 +142,7 @@ void SearchEngine::search_apps(std::wstring_view query_text, std::vector<SearchR
             // Recency / launch frequency bonus
             auto count_it = launch_counts_.find(utils::to_lower(app.target_path));
             if (count_it != launch_counts_.end()) {
-                score += static_cast<int32_t>(std::min<uint32_t>(count_it->second * 100, 1500));
+                score += static_cast<int32_t>(std::min<uint32_t>(count_it->second * 10000, 100000));
             }
 
             res.score = score;
@@ -172,7 +173,7 @@ void SearchEngine::search_files(std::wstring_view query_text, std::vector<Search
 
             auto count_it = launch_counts_.find(utils::to_lower(item.path));
             if (count_it != launch_counts_.end()) {
-                score += static_cast<int32_t>(std::min<uint32_t>(count_it->second * 100, 1000));
+                score += static_cast<int32_t>(std::min<uint32_t>(count_it->second * 10000, 100000));
             }
 
             res.score = score;
@@ -258,7 +259,7 @@ std::vector<SearchResult> SearchEngine::get_default_results(size_t max_results) 
         res.badge = L"APP";
 
         auto count_it = launch_counts_.find(utils::to_lower(app.target_path));
-        res.score = (count_it != launch_counts_.end()) ? static_cast<int32_t>(count_it->second * 100) : 0;
+        res.score = (count_it != launch_counts_.end()) ? static_cast<int32_t>(count_it->second * 10000) : 0;
         results.push_back(std::move(res));
     }
 
@@ -305,6 +306,49 @@ std::vector<SearchResult> SearchEngine::get_default_results(size_t max_results) 
     }
 
     return results;
+}
+
+bool SearchEngine::save_mru(const std::wstring& cache_file_path) {
+    std::shared_lock<std::shared_mutex> lock(launch_mutex_);
+    
+    std::wstringstream ss;
+    for (const auto& kv : launch_counts_) {
+        ss << kv.first << L"|" << kv.second << L"\n";
+    }
+
+    std::string utf8_content = utils::wide_to_utf8(ss.str());
+    std::ofstream ofs(cache_file_path.c_str(), std::ios::binary);
+    if (!ofs.is_open()) return false;
+    ofs.write(utf8_content.c_str(), utf8_content.size());
+    return true;
+}
+
+bool SearchEngine::load_mru(const std::wstring& cache_file_path) {
+    std::ifstream ifs(cache_file_path.c_str(), std::ios::binary);
+    if (!ifs.is_open()) return false;
+
+    std::stringstream ss;
+    ss << ifs.rdbuf();
+    std::wstring content = utils::utf8_to_wide(ss.str());
+
+    std::wstringstream wss(content);
+    std::wstring line;
+    
+    std::unique_lock<std::shared_mutex> lock(launch_mutex_);
+    launch_counts_.clear();
+    
+    while (std::getline(wss, line)) {
+        if (line.empty()) continue;
+        size_t pipe = line.find_last_of(L"|");
+        if (pipe != std::wstring::npos && pipe + 1 < line.size()) {
+            std::wstring path = line.substr(0, pipe);
+            try {
+                uint32_t count = static_cast<uint32_t>(std::stoul(line.substr(pipe + 1)));
+                launch_counts_[path] = count;
+            } catch (...) {}
+        }
+    }
+    return true;
 }
 
 } // namespace orca_light::search
