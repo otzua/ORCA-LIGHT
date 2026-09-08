@@ -67,6 +67,9 @@ target_compile_definitions(Orca-Light PRIVATE
 )
 
 if(MSVC)
+    set_target_properties(Orca-Light PROPERTIES
+        LINK_FLAGS "/MANIFEST:NO"
+    )
     target_compile_options(Orca-Light PRIVATE
         /W4
         /permissive-
@@ -74,6 +77,7 @@ if(MSVC)
         $<$<CONFIG:Release>:/O2 /Oi /Ot /GL /Gy>
     )
     target_link_options(Orca-Light PRIVATE
+        /MANIFEST:NO
         $<$<CONFIG:Release>:/LTCG /OPT:REF /OPT:ICF>
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
