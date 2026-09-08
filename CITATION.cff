@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use Orca Light in your research, software analysis, or benchmarking, please cite it using the metadata below."
+authors:
+  - family-names: "otzua"
+    given-names: "Krish"
+title: "Orca Light: An Ultra-Lightweight Native Win32 Brutalist Application Launcher for Windows"
+version: 1.0.0
+date-released: 2026-09-08
+url: "https://github.com/otzua/orca-light"
+repository-code: "https://github.com/otzua/orca-light"
+keywords:
+  - "c++20"
+  - "win32"
+  - "direct2d"
+  - "launcher"
+  - "spotlight"
+  - "fuzzy-search"
+  - "low-latency"
+license: "MIT"

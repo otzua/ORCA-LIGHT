@@ -67,6 +67,7 @@ cl.exe /nologo /std:c++20 /O2 /Oi /Ot /Gy /MD /EHsc /W4 ^
     src\main.cpp ^
     src\app.cpp ^
     src\calculator\calc_engine.cpp ^
+    src\calculator\currency_converter.cpp ^
     src\clipboard\clipboard_history.cpp ^
     src\config\config_manager.cpp ^
     src\indexer\app_indexer.cpp ^
@@ -77,11 +78,12 @@ cl.exe /nologo /std:c++20 /O2 /Oi /Ot /Gy /MD /EHsc /W4 ^
     src\ui\renderer.cpp ^
     src\ui\window.cpp ^
     src\utils\icon_loader.cpp ^
+    src\utils\logger.cpp ^
     src\utils\shell_utils.cpp ^
     src\utils\string_utils.cpp ^
     build\resource.res ^
     /link /OUT:build\Orca-Light.exe /SUBSYSTEM:WINDOWS /LTCG /OPT:REF /OPT:ICF ^
-    d2d1.lib dwrite.lib windowscodecs.lib dxgi.lib shlwapi.lib shell32.lib ole32.lib oleaut32.lib advapi32.lib user32.lib gdi32.lib propsys.lib uuid.lib
+    d2d1.lib dwrite.lib windowscodecs.lib dxgi.lib shlwapi.lib shell32.lib ole32.lib oleaut32.lib advapi32.lib user32.lib gdi32.lib propsys.lib uuid.lib dwmapi.lib wininet.lib
 
 if %ERRORLEVEL% equ 0 (
     echo.

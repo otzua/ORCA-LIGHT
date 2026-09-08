@@ -1,0 +1,33 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# C++ and headers
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+
+# Windows Batch scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Config files
+*.ini text eol=crlf
+
+# Shell scripts
+*.sh text eol=lf
+
+# Markdown and Docs
+*.md text eol=lf
+*.txt text eol=crlf
+
+# Windows Resources
+*.rc text eol=crlf
+*.manifest text eol=lf
+
+# Binary files
+*.ico binary
+*.exe binary
+*.zip binary
+*.res binary
+*.o binary
+*.obj binary

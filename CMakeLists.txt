@@ -10,6 +10,7 @@ set(SOURCES
     src/main.cpp
     src/app.cpp
     src/calculator/calc_engine.cpp
+    src/calculator/currency_converter.cpp
     src/clipboard/clipboard_history.cpp
     src/config/config_manager.cpp
     src/indexer/app_indexer.cpp
@@ -20,6 +21,7 @@ set(SOURCES
     src/ui/renderer.cpp
     src/ui/window.cpp
     src/utils/icon_loader.cpp
+    src/utils/logger.cpp
     src/utils/shell_utils.cpp
     src/utils/string_utils.cpp
 )
@@ -27,6 +29,7 @@ set(SOURCES
 set(HEADERS
     src/app.h
     src/calculator/calc_engine.h
+    src/calculator/currency_converter.h
     src/clipboard/clipboard_history.h
     src/config/config_manager.h
     src/indexer/app_indexer.h
@@ -38,6 +41,7 @@ set(HEADERS
     src/ui/theme.h
     src/ui/window.h
     src/utils/icon_loader.h
+    src/utils/logger.h
     src/utils/shell_utils.h
     src/utils/string_utils.h
     res/resource.h
@@ -97,4 +101,6 @@ target_link_libraries(Orca-Light PRIVATE
     gdi32
     propsys
     uuid
+    dwmapi
+    wininet
 )

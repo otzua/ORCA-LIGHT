@@ -1,0 +1,66 @@
+name: Bug Report
+description: File a reproducible defect or unexpected behavior in Orca Light
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please ensure you are testing against the latest build of Orca Light before submitting.
+
+  - type: input
+    id: version
+    attributes:
+      label: Orca Light Version
+      description: Specify the exact version (e.g. 1.0.0 or commit SHA).
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Windows Operating System
+      description: Select your operating system environment.
+      options:
+        - Windows 11 (64-bit)
+        - Windows 10 (64-bit)
+        - Windows Server 2022
+        - Other (specify in details)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Defect Description
+      description: A clear and concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps to reproduce the behavior.
+      placeholder: |
+        1. Press 'Win + Space' to summon launcher
+        2. Type query '...'
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Diagnostic Log Output
+      description: Contents of %LOCALAPPDATA%\Orca-Light\orca-light.log (redact private directory names if needed).
+      render: text

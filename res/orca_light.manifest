@@ -3,10 +3,10 @@
   <assemblyIdentity
     version="1.0.0.0"
     processorArchitecture="*"
-    name="Spotlight.App"
+    name="OrcaLight.App"
     type="win32"
   />
-  <description>Spotlight - Ultra-lightweight native Windows launcher</description>
+  <description>Orca Light - Ultra-lightweight native Windows launcher</description>
   <dependency>
     <dependentAssembly>
       <assemblyIdentity

@@ -1,0 +1,90 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-msvc:
+    name: Build (MSVC 2022 x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compile Orca Light
+        run: |
+          cmake --build build --config Release --verbose
+
+      - name: Verify binary output
+        shell: pwsh
+        run: |
+          if (Test-Path "build\Release\Orca-Light.exe") {
+            Write-Host "MSVC build artifact verified: build\Release\Orca-Light.exe"
+            Get-Item "build\Release\Orca-Light.exe" | Format-List Length, LastWriteTime
+          } elseif (Test-Path "build\Orca-Light.exe") {
+            Write-Host "MSVC build artifact verified: build\Orca-Light.exe"
+            Get-Item "build\Orca-Light.exe" | Format-List Length, LastWriteTime
+          } else {
+            Write-Error "Build succeeded but Orca-Light.exe was not found in build directory."
+            exit 1
+          }
+
+  build-mingw:
+    name: Build (MinGW-w64 GCC x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+
+      - name: Compile Windows resource with windres
+        shell: msys2 {0}
+        run: |
+          windres -i res/resource.rc -o res/resource.o --target=pe-x86-64
+
+      - name: Compile static Orca Light binary
+        shell: msys2 {0}
+        run: |
+          x86_64-w64-mingw32-g++ -std=c++20 -O3 -mwindows -municode \
+            -DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX \
+            -Isrc -Ires \
+            src/main.cpp src/app.cpp \
+            src/calculator/calc_engine.cpp src/calculator/currency_converter.cpp \
+            src/clipboard/clipboard_history.cpp src/config/config_manager.cpp \
+            src/indexer/app_indexer.cpp src/indexer/file_indexer.cpp \
+            src/search/fuzzy_matcher.cpp src/search/search_engine.cpp \
+            src/system/system_commands.cpp src/ui/renderer.cpp src/ui/window.cpp \
+            src/utils/icon_loader.cpp src/utils/logger.cpp src/utils/shell_utils.cpp \
+            src/utils/string_utils.cpp res/resource.o \
+            -luuid -ld2d1 -ldwrite -lwindowscodecs -ldxgi -lshlwapi -lshell32 \
+            -lole32 -loleaut32 -ladvapi32 -luser32 -lgdi32 -lpropsys -ldwmapi -lwininet \
+            -static -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic -s -o Orca-Light.exe
+
+      - name: Check binary properties
+        shell: msys2 {0}
+        run: |
+          ls -la Orca-Light.exe
+          file Orca-Light.exe

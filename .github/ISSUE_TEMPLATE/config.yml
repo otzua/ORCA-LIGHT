@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability Reporting
+    url: https://github.com/otzua/orca-light/blob/main/SECURITY.md
+    about: Please report security vulnerabilities privately via email.
+  - name: Architecture & Internals Reference
+    url: https://github.com/otzua/orca-light/blob/main/ARCHITECTURE.md
+    about: Read the architectural specification before asking systems questions.
