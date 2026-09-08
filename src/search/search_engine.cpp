@@ -22,6 +22,7 @@ SearchEngine::SearchEngine(indexer::AppIndexer& app_indexer,
 
 void SearchEngine::record_launch(const std::wstring& path) {
     if (!path.empty()) {
+        std::unique_lock<std::shared_mutex> lock(launch_mutex_);
         launch_counts_[utils::to_lower(path)]++;
     }
 }
@@ -121,8 +122,9 @@ void SearchEngine::search_clipboard(std::wstring_view query_text, std::vector<Se
 
 void SearchEngine::search_apps(std::wstring_view query_text, std::vector<SearchResult>& out_results) {
     auto apps = app_indexer_.get_apps();
+    std::shared_lock<std::shared_mutex> lock(launch_mutex_);
 
-    for (const auto& app : apps) {
+    for (const auto& app : *apps) {
         auto match = FuzzyMatcher::match(query_text, app.name);
         if (match.matched) {
             SearchResult res;
@@ -151,8 +153,9 @@ void SearchEngine::search_apps(std::wstring_view query_text, std::vector<SearchR
 
 void SearchEngine::search_files(std::wstring_view query_text, std::vector<SearchResult>& out_results) {
     auto files = file_indexer_.get_all_items();
+    std::shared_lock<std::shared_mutex> lock(launch_mutex_);
 
-    for (const auto& item : files) {
+    for (const auto& item : *files) {
         auto match = FuzzyMatcher::match(query_text, item.name);
         if (match.matched) {
             SearchResult res;
@@ -243,7 +246,9 @@ std::vector<SearchResult> SearchEngine::get_default_results(size_t max_results) 
 
     // Show top apps
     auto apps = app_indexer_.get_apps();
-    for (const auto& app : apps) {
+    std::shared_lock<std::shared_mutex> lock(launch_mutex_);
+
+    for (const auto& app : *apps) {
         SearchResult res;
         res.type = ResultType::App;
         res.title = app.name;
@@ -263,6 +268,25 @@ std::vector<SearchResult> SearchEngine::get_default_results(size_t max_results) 
 
     if (results.size() > max_results) {
         results.resize(max_results);
+    }
+
+    // Live Feed Hack: if we are indexing, prepend the live feed paths
+    if (file_indexer_.is_indexing()) {
+        auto live = file_indexer_.get_live_feed(max_results);
+        if (!live.empty()) {
+            results.clear(); // Replace defaults with live feed
+            for (auto it = live.rbegin(); it != live.rend(); ++it) {
+                SearchResult res;
+                res.type = ResultType::File;
+                size_t slash = it->find_last_of(L"\\/");
+                res.title = (slash != std::wstring::npos) ? it->substr(slash + 1) : *it;
+                res.subtitle = *it;
+                res.path = *it;
+                res.badge = L"SCAN";
+                results.push_back(std::move(res));
+                if (results.size() >= max_results) break;
+            }
+        }
     }
 
     // If few or no apps, add frequent system commands

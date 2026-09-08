@@ -35,7 +35,7 @@ bool read_wstring(std::ifstream& ifs, std::wstring& str) {
 
 } // namespace
 
-FileIndexer::FileIndexer() {
+FileIndexer::FileIndexer() : items_(std::make_shared<std::vector<FileItem>>()) {
 }
 
 FileIndexer::~FileIndexer() {
@@ -121,9 +121,14 @@ void FileIndexer::scan_directory_recursive(const std::wstring& dir_path,
             if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
                 stack.push_back(full_path);
             }
-            // Sleep frequently to yield CPU/IO to the rest of the OS
-            if (local_batch.size() % 50 == 0) {
-                Sleep(2);
+            // Sleep frequently to yield CPU/IO to the rest of the OS, and update live feed
+            if (local_batch.size() % 20 == 0) {
+                Sleep(1);
+                std::lock_guard<std::mutex> lock(feed_mutex_);
+                recent_scanned_paths_.push_back(full_path);
+                if (recent_scanned_paths_.size() > 20) {
+                    recent_scanned_paths_.erase(recent_scanned_paths_.begin());
+                }
             }
         } while (FindNextFileW(hFind, &fd) && !stop_requested_.load());
 
@@ -136,8 +141,8 @@ void FileIndexer::indexing_worker(std::vector<std::wstring> directories,
     // Drop priority to absolute lowest to prevent ANY lag on low-end PCs
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
     
-    // Give the app 2 seconds to fully launch and settle before doing ANY IO
-    Sleep(2000);
+    // Give the app a small breather, but mostly start instantly on launch
+    Sleep(50);
     
     is_indexing_.store(true);
 
@@ -152,10 +157,11 @@ void FileIndexer::indexing_worker(std::vector<std::wstring> directories,
     }
 
     if (!stop_requested_.load()) {
+        auto new_items = std::make_shared<std::vector<FileItem>>(std::move(local_batch));
         std::lock_guard<std::mutex> lock(mutex_);
-        items_ = std::move(local_batch);
+        items_ = new_items;
         if (progress_cb_) {
-            progress_cb_(items_.size());
+            progress_cb_(items_->size());
         }
     }
 
@@ -184,16 +190,28 @@ void FileIndexer::start_indexing(const std::vector<std::wstring>& directories,
 
 size_t FileIndexer::get_total_indexed() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return items_.size();
+    return items_->size();
 }
 
-std::vector<FileItem> FileIndexer::get_all_items() const {
+std::shared_ptr<const std::vector<FileItem>> FileIndexer::get_all_items() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return items_;
 }
 
+std::vector<std::wstring> FileIndexer::get_live_feed(size_t max_count) const {
+    std::lock_guard<std::mutex> lock(feed_mutex_);
+    if (recent_scanned_paths_.empty()) return {};
+    size_t count = std::min(recent_scanned_paths_.size(), max_count);
+    return std::vector<std::wstring>(recent_scanned_paths_.end() - count, recent_scanned_paths_.end());
+}
+
 std::vector<FileItem> FileIndexer::search(std::wstring_view query, size_t max_results) const {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<const std::vector<FileItem>> current_items;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        current_items = items_;
+    }
+
     if (query.empty()) {
         return {};
     }
@@ -202,7 +220,7 @@ std::vector<FileItem> FileIndexer::search(std::wstring_view query, size_t max_re
     std::vector<FileItem> matches;
     matches.reserve(max_results);
 
-    for (const auto& item : items_) {
+    for (const auto& item : *current_items) {
         std::wstring lower_name = utils::to_lower(item.name);
         if (lower_name.find(lower_query) != std::wstring::npos) {
             matches.push_back(item);
@@ -216,7 +234,12 @@ std::vector<FileItem> FileIndexer::search(std::wstring_view query, size_t max_re
 }
 
 bool FileIndexer::save_cache(const std::wstring& cache_file_path) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<const std::vector<FileItem>> current_items;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        current_items = items_;
+    }
+
     std::filesystem::path path(cache_file_path);
     std::ofstream ofs(path, std::ios::binary);
     if (!ofs.is_open()) {
@@ -225,13 +248,13 @@ bool FileIndexer::save_cache(const std::wstring& cache_file_path) {
 
     uint32_t magic = CACHE_MAGIC;
     uint32_t version = CACHE_VERSION;
-    uint32_t count = static_cast<uint32_t>(items_.size());
+    uint32_t count = static_cast<uint32_t>(current_items->size());
 
     ofs.write(reinterpret_cast<const char*>(&magic), sizeof(magic));
     ofs.write(reinterpret_cast<const char*>(&version), sizeof(version));
     ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
 
-    for (const auto& item : items_) {
+    for (const auto& item : *current_items) {
         write_wstring(ofs, item.name);
         write_wstring(ofs, item.path);
         ofs.write(reinterpret_cast<const char*>(&item.size), sizeof(item.size));
@@ -280,8 +303,9 @@ bool FileIndexer::load_cache(const std::wstring& cache_file_path) {
         loaded.push_back(std::move(item));
     }
 
+    auto new_items = std::make_shared<std::vector<FileItem>>(std::move(loaded));
     std::lock_guard<std::mutex> lock(mutex_);
-    items_ = std::move(loaded);
+    items_ = new_items;
     return true;
 }
 

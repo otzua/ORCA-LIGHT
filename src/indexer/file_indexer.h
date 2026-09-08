@@ -7,6 +7,7 @@
 #include <atomic>
 #include <thread>
 #include <functional>
+#include <memory>
 
 namespace orca_light::indexer {
 
@@ -34,7 +35,10 @@ public:
     std::vector<FileItem> search(std::wstring_view query, size_t max_results = 50) const;
 
     // Direct access to all indexed items
-    std::vector<FileItem> get_all_items() const;
+    std::shared_ptr<const std::vector<FileItem>> get_all_items() const;
+
+    // Get recently scanned paths for live feed
+    std::vector<std::wstring> get_live_feed(size_t max_count) const;
 
     // Cache persistence
     bool save_cache(const std::wstring& cache_file_path);
@@ -58,7 +62,10 @@ private:
     bool is_excluded(std::wstring_view path, const std::vector<std::wstring>& exclude_patterns) const;
 
     mutable std::mutex mutex_;
-    std::vector<FileItem> items_;
+    std::shared_ptr<const std::vector<FileItem>> items_;
+    
+    mutable std::mutex feed_mutex_;
+    std::vector<std::wstring> recent_scanned_paths_;
     HANDLE worker_thread_ = nullptr;
     std::atomic<bool> stop_requested_{ false };
     std::atomic<bool> is_indexing_{ false };

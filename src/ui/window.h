@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <atomic>
 #include "renderer.h"
 #include "../search/search_engine.h"
 
@@ -57,6 +58,9 @@ private:
     std::function<void(HWND)> on_clipboard_update_;
     bool is_visible_ = false;
     bool just_shown_ = false;
+
+    // Async search
+    std::atomic<uint64_t> search_generation_{0};
 
     // Tray Icon
     void setup_tray_icon();

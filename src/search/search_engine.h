@@ -6,6 +6,8 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <shared_mutex>
+#include <unordered_map>
 #include "../indexer/app_indexer.h"
 #include "../indexer/file_indexer.h"
 #include "../clipboard/clipboard_history.h"
@@ -50,6 +52,10 @@ public:
     // Mark an item as launched (MRU tracking)
     void record_launch(const std::wstring& path);
 
+    bool is_indexing() const {
+        return file_indexer_.is_indexing();
+    }
+
 private:
     void search_calculator(std::wstring_view query_text, std::vector<SearchResult>& out_results);
     void search_commands(std::wstring_view query_text, std::vector<SearchResult>& out_results, bool force_commands_only);
@@ -62,6 +68,7 @@ private:
     clipboard::ClipboardHistory& clipboard_history_;
     system::SystemCommandRegistry& command_registry_;
 
+    mutable std::shared_mutex launch_mutex_;
     std::unordered_map<std::wstring, uint32_t> launch_counts_;
 };
 

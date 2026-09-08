@@ -7,6 +7,7 @@
 #include "../utils/logger.h"
 #include <windowsx.h>
 #include <algorithm>
+#include <thread>
 
 namespace orca_light::ui {
 
@@ -15,7 +16,9 @@ namespace {
 constexpr UINT_PTR TIMER_CURSOR_BLINK = 1001;
 constexpr UINT_PTR TIMER_ACTIVATION_GRACE = 1002;
 constexpr UINT_PTR TIMER_ANIMATION = 1003;
+constexpr UINT_PTR TIMER_LIVE_FEED = 1004;
 constexpr UINT WM_TRAYICON = WM_USER + 102;
+constexpr UINT WM_SEARCH_COMPLETE = WM_USER + 103;
 constexpr const wchar_t* WINDOW_CLASS_NAME = L"Orca-LightWindowClass";
 
 } // namespace
@@ -250,6 +253,7 @@ void MainWindow::show() {
     anim_start_time_ = GetTickCount64();
     SetTimer(hwnd_, TIMER_ANIMATION, 16, nullptr);
     SetTimer(hwnd_, TIMER_ACTIVATION_GRACE, 350, nullptr);
+    SetTimer(hwnd_, TIMER_LIVE_FEED, 100, nullptr);
     InvalidateRect(hwnd_, nullptr, FALSE);
 }
 
@@ -260,8 +264,9 @@ void MainWindow::hide() {
     is_visible_ = false;
     just_shown_ = false;
     KillTimer(hwnd_, TIMER_ACTIVATION_GRACE);
-        KillTimer(hwnd_, TIMER_ANIMATION);
-        remove_tray_icon();
+    KillTimer(hwnd_, TIMER_ANIMATION);
+    KillTimer(hwnd_, TIMER_LIVE_FEED);
+    remove_tray_icon();
     ShowWindow(hwnd_, SW_HIDE);
 }
 
@@ -278,11 +283,15 @@ void MainWindow::toggle_visibility() {
 }
 
 void MainWindow::perform_search() {
-    current_results_ = search_engine_.query(current_query_, 9);
-    if (selected_index_ >= static_cast<int>(current_results_.size())) {
-        selected_index_ = current_results_.empty() ? 0 : static_cast<int>(current_results_.size() - 1);
-    }
-    update_layout();
+    uint64_t current_gen = ++search_generation_;
+    std::wstring query = current_query_;
+    
+    std::thread([this, query, current_gen]() {
+        auto results = search_engine_.query(query, 9);
+        
+        auto* res_ptr = new std::vector<search::SearchResult>(std::move(results));
+        PostMessageW(hwnd_, WM_SEARCH_COMPLETE, static_cast<WPARAM>(current_gen), reinterpret_cast<LPARAM>(res_ptr));
+    }).detach();
 }
 
 void MainWindow::execute_selected_primary() {
@@ -354,6 +363,21 @@ LRESULT MainWindow::window_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             return 0;
         }
         
+        case WM_SEARCH_COMPLETE: {
+            uint64_t gen = static_cast<uint64_t>(wParam);
+            auto* res_ptr = reinterpret_cast<std::vector<search::SearchResult>*>(lParam);
+            
+            if (gen == search_generation_.load()) {
+                current_results_ = std::move(*res_ptr);
+                if (selected_index_ >= static_cast<int>(current_results_.size())) {
+                    selected_index_ = current_results_.empty() ? 0 : static_cast<int>(current_results_.size() - 1);
+                }
+                update_layout();
+            }
+            delete res_ptr;
+            return 0;
+        }
+
         case WM_ACTIVATE: {
             if (LOWORD(wParam) == WA_INACTIVE) {
                 if (is_visible_ && !just_shown_) {
@@ -405,6 +429,10 @@ LRESULT MainWindow::window_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                     KillTimer(hwnd, TIMER_ANIMATION);
                 }
                 InvalidateRect(hwnd, nullptr, FALSE);
+            } else if (wParam == TIMER_LIVE_FEED) {
+                if (current_query_.empty() && search_engine_.is_indexing()) {
+                    perform_search();
+                }
             }
             return 0;
         }

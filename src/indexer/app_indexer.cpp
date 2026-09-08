@@ -4,6 +4,7 @@
 #include <shlwapi.h>
 #include <unordered_set>
 #include <algorithm>
+#include <memory>
 
 namespace orca_light::indexer {
 
@@ -25,7 +26,7 @@ bool is_ignored_shortcut(std::wstring_view name) {
 
 } // namespace
 
-AppIndexer::AppIndexer() {
+AppIndexer::AppIndexer() : apps_(std::make_shared<std::vector<AppItem>>()) {
 }
 
 bool AppIndexer::resolve_shell_link(const std::wstring& lnk_path, AppItem& out_app) {
@@ -75,7 +76,7 @@ bool AppIndexer::resolve_shell_link(const std::wstring& lnk_path, AppItem& out_a
     return SUCCEEDED(hr);
 }
 
-void AppIndexer::scan_directory_shortcuts(const std::wstring& dir_path) {
+void AppIndexer::scan_directory_shortcuts(const std::wstring& dir_path, std::vector<AppItem>& local_apps) {
     if (dir_path.empty()) {
         return;
     }
@@ -118,7 +119,7 @@ void AppIndexer::scan_directory_shortcuts(const std::wstring& dir_path) {
                     AppItem app;
                     app.name = raw_name;
                     if (resolve_shell_link(full_path, app)) {
-                        apps_.push_back(std::move(app));
+                        local_apps.push_back(std::move(app));
                     }
                 }
             }
@@ -128,7 +129,7 @@ void AppIndexer::scan_directory_shortcuts(const std::wstring& dir_path) {
     }
 }
 
-void AppIndexer::scan_registry_app_paths() {
+void AppIndexer::scan_registry_app_paths(std::vector<AppItem>& local_apps) {
     HKEY hKey = nullptr;
     const wchar_t* subkey = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths";
     
@@ -156,7 +157,7 @@ void AppIndexer::scan_registry_app_paths() {
                             item.name = app_name;
                             item.target_path = path_val;
                             item.icon_path = path_val;
-                            apps_.push_back(std::move(item));
+                            local_apps.push_back(std::move(item));
                         }
                     }
                 }
@@ -169,7 +170,7 @@ void AppIndexer::scan_registry_app_paths() {
     }
 }
 
-void AppIndexer::scan_known_tools() {
+void AppIndexer::scan_known_tools(std::vector<AppItem>& local_apps) {
     wchar_t sys_dir[MAX_PATH] = {};
     GetSystemDirectoryW(sys_dir, MAX_PATH);
     std::wstring sys_path(sys_dir);
@@ -200,59 +201,59 @@ void AppIndexer::scan_known_tools() {
             item.description = t.desc;
             item.target_path = target;
             item.icon_path = target;
-            apps_.push_back(std::move(item));
+            local_apps.push_back(std::move(item));
         }
     }
 }
 
 void AppIndexer::scan_apps() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    apps_.clear();
+    std::vector<AppItem> local_apps;
 
     PWSTR user_programs = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Programs, 0, nullptr, &user_programs))) {
-        scan_directory_shortcuts(user_programs);
+        scan_directory_shortcuts(user_programs, local_apps);
         CoTaskMemFree(user_programs);
     }
 
     PWSTR common_programs = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_CommonPrograms, 0, nullptr, &common_programs))) {
-        scan_directory_shortcuts(common_programs);
+        scan_directory_shortcuts(common_programs, local_apps);
         CoTaskMemFree(common_programs);
     }
 
     PWSTR user_desktop = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Desktop, 0, nullptr, &user_desktop))) {
-        scan_directory_shortcuts(user_desktop);
+        scan_directory_shortcuts(user_desktop, local_apps);
         CoTaskMemFree(user_desktop);
     }
 
     PWSTR common_desktop = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_PublicDesktop, 0, nullptr, &common_desktop))) {
-        scan_directory_shortcuts(common_desktop);
+        scan_directory_shortcuts(common_desktop, local_apps);
         CoTaskMemFree(common_desktop);
     }
 
-    scan_registry_app_paths();
-    scan_known_tools();
+    scan_registry_app_paths(local_apps);
+    scan_known_tools(local_apps);
 
     // Deduplicate by case-insensitive name and target path
     std::unordered_set<std::wstring> seen;
-    std::vector<AppItem> unique_apps;
-    unique_apps.reserve(apps_.size());
+    auto unique_apps = std::make_shared<std::vector<AppItem>>();
+    unique_apps->reserve(local_apps.size());
 
-    for (auto& item : apps_) {
+    for (auto& item : local_apps) {
         std::wstring key = utils::to_lower(item.name) + L"|" + utils::to_lower(item.target_path);
         if (seen.find(key) == seen.end()) {
             seen.insert(key);
-            unique_apps.push_back(std::move(item));
+            unique_apps->push_back(std::move(item));
         }
     }
 
-    apps_ = std::move(unique_apps);
+    std::lock_guard<std::mutex> lock(mutex_);
+    apps_ = unique_apps;
 }
 
-std::vector<AppItem> AppIndexer::get_apps() const {
+std::shared_ptr<const std::vector<AppItem>> AppIndexer::get_apps() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return apps_;
 }

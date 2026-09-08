@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <memory>
 
 namespace orca_light::indexer {
 
@@ -26,16 +27,16 @@ public:
     void scan_apps();
 
     // Get current indexed applications (thread-safe)
-    std::vector<AppItem> get_apps() const;
+    std::shared_ptr<const std::vector<AppItem>> get_apps() const;
 
 private:
-    void scan_directory_shortcuts(const std::wstring& dir_path);
-    void scan_registry_app_paths();
-    void scan_known_tools();
+    void scan_directory_shortcuts(const std::wstring& dir_path, std::vector<AppItem>& local_apps);
+    void scan_registry_app_paths(std::vector<AppItem>& local_apps);
+    void scan_known_tools(std::vector<AppItem>& local_apps);
     bool resolve_shell_link(const std::wstring& lnk_path, AppItem& out_app);
 
     mutable std::mutex mutex_;
-    std::vector<AppItem> apps_;
+    std::shared_ptr<const std::vector<AppItem>> apps_;
 };
 
 } // namespace orca_light::indexer

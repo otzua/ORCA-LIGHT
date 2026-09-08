@@ -44,8 +44,12 @@ void ConfigManager::init_defaults() {
     config_.max_results = 9;
     config_.max_clipboard_items = 50;
 
-    // Default search folders: Desktop, Documents, Downloads
+    // Default search folders: Home (USERPROFILE), Desktop, Documents, Downloads
     PWSTR known_path = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, nullptr, &known_path))) {
+        config_.search_directories.push_back(known_path);
+        CoTaskMemFree(known_path);
+    }
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Desktop, 0, nullptr, &known_path))) {
         config_.search_directories.push_back(known_path);
         CoTaskMemFree(known_path);
