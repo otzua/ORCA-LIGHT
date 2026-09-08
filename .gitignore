@@ -1,0 +1,24 @@
+# Build artifacts
+*.o
+*.obj
+*.exe
+*.dll
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Output directories
+Orca-Light-Windows-x64/
+bin/
+build/
+obj/
+
+# Editor / OS files
+.vscode/
+.vs/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
