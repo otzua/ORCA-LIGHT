@@ -1,15 +1,16 @@
 <div align="center">
-  <img src="res/icon.ico" width="128" height="128" alt="Spotlight Logo">
-  <h1>Spotlight</h1>
+  <img src="res/icon.ico" width="128" height="128" alt="Orca Light Logo">
+  <h1>Orca Light</h1>
   <p><strong>Ultra-lightweight, native Win32, brutalist application launcher and productivity spotlight for Windows.</strong></p>
 
   <p>
+    <a href="https://github.com/otzua/orca-light/releases/latest"><img src="https://img.shields.io/badge/Release-v1.0.0-blue.svg" alt="Release: v1.0.0"></a>
+    <a href="https://github.com/otzua/orca-light/releases/latest"><img src="https://img.shields.io/badge/Setup%20Size-~650%20KB-success.svg" alt="Setup Size: ~650 KB"></a>
+    <a href="https://github.com/otzua/orca-light/releases/latest"><img src="https://img.shields.io/badge/Binary%20Size-1.6%20MB-brightgreen.svg" alt="Binary Size: 1.6 MB"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
     <a href="https://isocpp.org/"><img src="https://img.shields.io/badge/Language-C%2B%2B20-00599C.svg" alt="C++20"></a>
     <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Platform: Windows 10/11 x64"></a>
     <img src="https://img.shields.io/badge/Architecture-x86__64-informational.svg" alt="Architecture: x86_64">
-    <img src="https://img.shields.io/badge/Graphics-Direct2D%20%2F%20DirectWrite-success.svg" alt="Graphics: Direct2D / DirectWrite">
-    <img src="https://img.shields.io/badge/Runtime-Zero%20Dependencies-brightgreen.svg" alt="Runtime: Zero Dependencies">
     <img src="https://img.shields.io/badge/RAM-~12.4%20MB-orange.svg" alt="RAM: ~12.4 MB">
   </p>
 </div>
@@ -18,6 +19,7 @@
 
 ## Table of Contents
 
+- [Releases & Downloads](#releases--downloads)
 - [Executive Overview](#executive-overview)
 - [Design Principles](#design-principles)
 - [Core Subsystems & Architecture](#core-subsystems--architecture)
@@ -33,6 +35,34 @@
 - [Documentation Index](#documentation-index)
 - [Contributing](#contributing)
 - [License & Attributions](#license--attributions)
+
+---
+
+## Releases & Downloads
+
+Orca Light is engineered with an obsession for minimalism, raw efficiency, and instant execution. While modern Electron-based or .NET-based launchers require multi-hundred-megabyte setups and heavy runtime environments, Orca Light distributes as an astonishingly small package:
+
+- **Complete Setup & Portable Archive**: **~650 KB** (0.65 MB - smaller than a typical web banner)
+- **Standalone Compiled Executable**: **1.6 MB** (Single static binary, zero external DLL dependencies)
+- **Runtime Dependency Footprint**: **0 MB** (No .NET, no WebView2, no Chromium runtime)
+
+Direct downloads from the official [v1.0.0 Release](https://github.com/otzua/orca-light/releases/latest):
+
+| Download Artifact | Size | Description | SHA-256 Checksum |
+| :--- | :--- | :--- | :--- |
+| **[Orca-Light-Windows-x64.zip](https://github.com/otzua/orca-light/releases/download/v1.0.0/Orca-Light-Windows-x64.zip)** | **~650 KB** | Full portable package containing executable, setup/run scripts, config, and documentation | `388fde2fb5330a1d18a6bc9bfaa282acf3e6a2bdec35b6f9890ef4fbe826f033` |
+| **[Orca-Light.exe](https://github.com/otzua/orca-light/releases/download/v1.0.0/Orca-Light.exe)** | **1.6 MB** | Raw standalone Win32 executable ready to run immediately | `292e7e320b8c7ae669fb350a99f5d23dd5ff2ba05f06f7b813b8fb1e5f07becf` |
+
+### Distribution Footprint Comparison
+
+| Application | Download / Setup Size | Disk Installed Footprint | Runtime Dependencies |
+| :--- | :--- | :--- | :--- |
+| **Orca Light** | **~650 KB** | **~1.6 MB** | **None (Pure Win32)** |
+| Everything Search | ~3.8 MB | ~6.5 MB | None |
+| Wox Launcher | ~45 MB | ~95 MB | .NET Framework |
+| Flow Launcher | ~85 MB | ~180 MB | .NET Desktop Runtime |
+| Raycast (Windows) | ~150 MB+ | ~350 MB+ | Web / Custom Runtime |
+| PowerToys Run | ~220 MB | ~500 MB+ | .NET 8 Desktop / WinUI 3 |
 
 ---
 
